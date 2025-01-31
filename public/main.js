@@ -8,7 +8,8 @@ function monitorFrequencyData(analyser) {
 
   return () => {
     const data = frequencyData.current();
-    console.log(data.slice(0, 10));
+    const peak = findPeakFrequency(data);
+    console.log(peak);
   };
 }
 
@@ -103,6 +104,27 @@ async function handleClick() {
     console.error("Failed to initialize audio:", error);
     button.disabled = false;
   }
+}
+
+/**
+ * Finds the index and value of the highest amplitude in frequency data
+ * @param {Uint8Array} frequencyData - The frequency data array to analyze
+ * @param {Object} options - Optional configuration
+ * @param {number} options.threshold - Minimum amplitude to consider (0-255)
+ * @returns {{maxIndex: number, maxValue: number}} The index and value of the peak
+ */
+function findPeakFrequency(frequencyData, { threshold = 0 } = {}) {
+  let maxIndex = 0;
+  let maxValue = 0;
+
+  for (let i = 0; i < frequencyData.length; i++) {
+    if (frequencyData[i] > maxValue && frequencyData[i] >= threshold) {
+      maxValue = frequencyData[i];
+      maxIndex = i;
+    }
+  }
+
+  return { maxIndex, maxValue };
 }
 
 // Sets up event listeners when the DOM is fully loaded
