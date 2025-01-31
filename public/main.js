@@ -9,7 +9,7 @@ function monitorFrequencyData(analyser) {
   return () => {
     const data = frequencyData.current();
     const peak = findPeakFrequency(data);
-    console.log(peak);
+    //console.log(peak);
   };
 }
 
@@ -82,13 +82,14 @@ function getFrames(onFrame) {
  * Click handler for starting the audio visualization
  * @returns {Promise<void>}
  */
-async function handleClick() {
-  const button = document.querySelector("#startAudio");
+async function handleClick(e) {
+  const note = e.target.innerText;
+  const button = e.target;
   button.disabled = true; // Prevent multiple clicks
 
   try {
     const { source, analyser, context } = await initAudioVisualizer(
-      "public/media/notes/base/E2.mp3"
+      `public/media/notes/base/${note}.mp3`
     );
 
     source.start();
