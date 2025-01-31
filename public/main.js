@@ -9,7 +9,7 @@ function monitorFrequencyData(analyser) {
   return () => {
     const data = frequencyData.current();
     const peak = findPeakFrequency(data);
-    //console.log(peak);
+    console.log(peak);
   };
 }
 
@@ -128,7 +128,6 @@ function findPeakFrequency(frequencyData, { threshold = 0 } = {}) {
   return { maxIndex, maxValue };
 }
 
-// Sets up event listeners when the DOM is fully loaded
 document.addEventListener("DOMContentLoaded", () => {
   console.log("Page loaded successfully! 🚀");
   document.querySelector("#startAudio").addEventListener("click", handleClick);
