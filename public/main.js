@@ -1,3 +1,8 @@
+/**
+ * Creates a monitoring function for frequency data from an analyser node
+ * @param {AnalyserNode} analyser - The Web Audio API analyser node to monitor
+ * @returns {() => void} A function that when called logs the first 10 frequency data points
+ */
 function monitorFrequencyData(analyser) {
   const frequencyData = FrequencyData(analyser);
 
@@ -7,6 +12,11 @@ function monitorFrequencyData(analyser) {
   };
 }
 
+/**
+ * Creates a wrapper around the frequency data array
+ * @param {AnalyserNode} analyser - The Web Audio API analyser node to get data from
+ * @returns {{current: () => Uint8Array}} An object with a method to get current frequency data
+ */
 function FrequencyData(analyser) {
   const frequencyData = new Uint8Array(analyser.frequencyBinCount);
 
@@ -18,6 +28,11 @@ function FrequencyData(analyser) {
   };
 }
 
+/**
+ * Initializes the Web Audio API components for audio visualization
+ * @param {string} audioUrl - URL of the audio file to load
+ * @returns {Promise<{analyser: AnalyserNode, source: AudioBufferSourceNode}>} The configured audio nodes
+ */
 async function initAudioVisualizer(audioUrl) {
   const audioContext = new AudioContext();
   const analyser = audioContext.createAnalyser();
@@ -37,6 +52,11 @@ async function initAudioVisualizer(audioUrl) {
   };
 }
 
+/**
+ * Sets up an animation frame loop that calls the provided callback
+ * @param {() => void} onFrame - Callback function to execute each animation frame
+ * @returns {() => void} Cleanup function to stop the animation
+ */
 function getFrames(onFrame) {
   let running = true;
 
@@ -53,12 +73,17 @@ function getFrames(onFrame) {
   };
 }
 
-// Move button handler inside DOMContentLoaded
+// Sets up event listeners when the DOM is fully loaded
 document.addEventListener("DOMContentLoaded", () => {
   console.log("Page loaded successfully! 🚀");
   document.querySelector("#startAudio").addEventListener("click", handleClick);
 });
 
+/**
+ * Click handler for starting the audio visualization
+ * Initializes the audio, starts playback, and sets up the visualization loop
+ * @returns {Promise<void>}
+ */
 async function handleClick() {
   const { source, analyser } = await initAudioVisualizer(
     "public/media/notes/base/E2.mp3"
