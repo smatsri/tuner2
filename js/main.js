@@ -7,7 +7,8 @@ async function handleClick(e) {
   const noteFile = e.target.getAttribute("data-file");
   const button = e.target;
   button.disabled = true; // Prevent multiple clicks
-  console.log("Playing " + e.target.innerText);
+
+  console.log("Playing " + e.target.innerText + " from " + groupName);
   try {
     const { source, analyser, context } = await initAudioVisualizer(
       `media/notes/${groupName}/${noteFile}`

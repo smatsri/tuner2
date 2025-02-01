@@ -1,24 +1,25 @@
-import { createFrequencyData } from "./audio-analyzer.js";
+import { detectNote, getFrequencyData } from "./audio-analyzer.js";
 import { createFrequencyVisualizer } from "./visualizer.js";
 
 export function monitorFrequencyData(analyser, audioContext) {
-  const frequencyData = createFrequencyData(analyser, audioContext);
+  const frequencyData = new Uint8Array(analyser.frequencyBinCount);
   const visualizer = createFrequencyVisualizer();
   return () => {
-    const data = frequencyData.current();
+    const data = getFrequencyData(analyser, frequencyData);
     visualizer.draw(data);
-    const note = frequencyData.detectNote();
+
+    const note = detectNote(analyser, audioContext);
     if (note && note.note) {
       console.log(note?.note);
     }
   };
 }
 
-export async function initAudioVisualizer(audioUrl) {
+export async function initAudioVisualizer(audioUrl, globk = 1) {
   const audioContext = new AudioContext();
   const analyser = audioContext.createAnalyser();
   // Configure analyser for better visualization
-  analyser.fftSize = 4096; // Increase FFT size for better frequency resolution
+  analyser.fftSize = 4096 * globk; // Increase FFT size for better frequency resolution
   analyser.smoothingTimeConstant = 0; // Smooths visualization
   // analyser.minDecibels = -90;
   // analyser.maxDecibels = -10;
