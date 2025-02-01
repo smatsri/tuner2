@@ -39,12 +39,14 @@ function createFrequencyVisualizer() {
  * @param {AnalyserNode} analyser - The Web Audio API analyser node to monitor
  * @returns {() => void} A function that when called logs the first 10 frequency data points
  */
-function monitorFrequencyData(analyser) {
-  const frequencyData = createFrequencyData(analyser);
+function monitorFrequencyData(analyser, audioContext) {
+  const frequencyData = createFrequencyData(analyser, audioContext);
   const visualizer = createFrequencyVisualizer();
   return () => {
     const data = frequencyData.current();
     visualizer.draw(data);
+    const note = frequencyData.detectNote();
+    //console.log(note?.note);
   };
 }
 
@@ -53,13 +55,92 @@ function monitorFrequencyData(analyser) {
  * @param {AnalyserNode} analyser - The Web Audio API analyser node to get data from
  * @returns {{current: () => Uint8Array}} An object with a method to get current frequency data
  */
-function createFrequencyData(analyser, scale = 0.5) {
+function createFrequencyData(analyser, audioContext, scale = 0.5) {
   const frequencyData = new Uint8Array(analyser.frequencyBinCount);
+
+  const getBinFrequency = (binIndex) => {
+    return binIndex * (audioContext.sampleRate / analyser.fftSize);
+  };
+
+  const getNoteName = (frequency) => {
+    const noteFrequencies = {
+      E2: 82.41,
+      A2: 110.0,
+      D3: 146.83,
+      G3: 196.0,
+      B3: 246.94,
+      E4: 329.63,
+    };
+
+    let closestNote = null;
+    let closestDiff = Infinity;
+
+    for (const [note, freq] of Object.entries(noteFrequencies)) {
+      const diff = Math.abs(frequency - freq);
+      if (diff < closestDiff) {
+        closestDiff = diff;
+        closestNote = note;
+      }
+    }
+
+    const percentDiff = closestDiff / noteFrequencies[closestNote];
+    if (percentDiff <= 0.15) {
+      return closestNote;
+    }
+    return null;
+  };
 
   return {
     current: () => {
       analyser.getByteFrequencyData(frequencyData);
-      return frequencyData.map((value) => value * scale);
+      return Array.from(frequencyData).map((value) => value * scale);
+    },
+
+    detectNote: () => {
+      analyser.getByteFrequencyData(frequencyData);
+
+      let maxAmplitude = 0;
+      let peakIndex = -1;
+
+      // Adjust frequency range to better target E2's fundamental
+      const startBin = Math.floor(70 / getBinFrequency(1)); // Lower bound
+      const endBin = Math.floor(350 / getBinFrequency(1)); // Upper bound to include all target notes
+
+      // First pass: find the absolute maximum amplitude
+      let absoluteMax = 0;
+      for (let i = startBin; i < endBin; i++) {
+        if (frequencyData[i] > absoluteMax) {
+          absoluteMax = frequencyData[i];
+        }
+      }
+
+      // Second pass: find significant peak that's at least 50% of max amplitude
+      const threshold = absoluteMax * 0.5;
+      for (let i = startBin; i < endBin; i++) {
+        if (frequencyData[i] > threshold && frequencyData[i] > maxAmplitude) {
+          maxAmplitude = frequencyData[i];
+          peakIndex = i;
+        }
+      }
+
+      if (maxAmplitude > 30) {
+        const fundamentalFreq = getBinFrequency(peakIndex);
+        const noteName = getNoteName(fundamentalFreq);
+
+        console.log(
+          `Detected frequency: ${fundamentalFreq.toFixed(
+            2
+          )}Hz, note: ${noteName}`
+        );
+
+        return {
+          frequency: Math.round(fundamentalFreq),
+          note: noteName,
+          amplitude: maxAmplitude,
+        };
+      }
+
+      return null;
     },
   };
 }
@@ -73,7 +154,7 @@ async function initAudioVisualizer(audioUrl) {
   const audioContext = new AudioContext();
   const analyser = audioContext.createAnalyser();
   // Configure analyser for better visualization
-  analyser.fftSize = 2048; // Allows for more detailed frequency data
+  analyser.fftSize = 4096; // Increase FFT size for better frequency resolution
   analyser.smoothingTimeConstant = 0.8; // Smooths visualization
   analyser.minDecibels = -90;
   analyser.maxDecibels = -10;
@@ -124,7 +205,7 @@ async function handleClick(e) {
   const noteFile = e.target.getAttribute("data-file");
   const button = e.target;
   button.disabled = true; // Prevent multiple clicks
-
+  console.log("Playing " + e.target.innerText);
   try {
     const { source, analyser, context } = await initAudioVisualizer(
       `public/media/notes/${groupName}/${noteFile}`
@@ -132,7 +213,7 @@ async function handleClick(e) {
 
     source.start();
 
-    const stop = getFrames(monitorFrequencyData(analyser));
+    const stop = getFrames(monitorFrequencyData(analyser, context));
 
     source.addEventListener("ended", () => {
       stop();
