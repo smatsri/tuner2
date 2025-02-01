@@ -75,6 +75,8 @@ async function initAudioVisualizer(audioUrl) {
   // Configure analyser for better visualization
   analyser.fftSize = 2048; // Allows for more detailed frequency data
   analyser.smoothingTimeConstant = 0.8; // Smooths visualization
+  analyser.minDecibels = -90;
+  analyser.maxDecibels = 100;
 
   const response = await fetch(audioUrl);
   const data = await response.arrayBuffer();
