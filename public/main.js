@@ -53,13 +53,13 @@ function monitorFrequencyData(analyser) {
  * @param {AnalyserNode} analyser - The Web Audio API analyser node to get data from
  * @returns {{current: () => Uint8Array}} An object with a method to get current frequency data
  */
-function createFrequencyData(analyser) {
+function createFrequencyData(analyser, scale = 0.5) {
   const frequencyData = new Uint8Array(analyser.frequencyBinCount);
 
   return {
     current: () => {
       analyser.getByteFrequencyData(frequencyData);
-      return frequencyData;
+      return frequencyData.map((value) => value * scale);
     },
   };
 }
@@ -76,7 +76,7 @@ async function initAudioVisualizer(audioUrl) {
   analyser.fftSize = 2048; // Allows for more detailed frequency data
   analyser.smoothingTimeConstant = 0.8; // Smooths visualization
   analyser.minDecibels = -90;
-  analyser.maxDecibels = 100;
+  analyser.maxDecibels = -10;
 
   const response = await fetch(audioUrl);
   const data = await response.arrayBuffer();
