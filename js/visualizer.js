@@ -63,11 +63,29 @@ export function createFrequencyVisualizer({
     ctx.fillText(`Frequency: ${frequency}`, 10, 20);
   };
 
-  const drawFrequencyRuler = (frequency) => {
+  // Linear interpolation function
+  const lerp = (start, end, t) => start + (end - start) * t;
+
+  let currentFrequency = null;
+
+  const drawFrequencyRuler = (targetFrequency) => {
     const rulerHeight = 50;
     const rulerY = HEIGHT - rulerHeight;
-    const minFreq = 20; // Minimum audible frequency
-    const maxFreq = 2000; // Maximum frequency to display
+
+    // Initialize currentFrequency if it's null
+    if (currentFrequency === null) {
+      currentFrequency = targetFrequency;
+    }
+
+    // Smoothly transition to the target frequency
+    currentFrequency = lerp(currentFrequency, targetFrequency, 0.1);
+
+    // Calculate the frequency range centered around the current frequency
+    const minFreq = currentFrequency - 10;
+    const maxFreq = currentFrequency + 10;
+
+    // Calculate pixels per Hz for scaling
+    const pixelsPerHz = WIDTH / (maxFreq - minFreq);
 
     // Draw ruler base line
     ctx.beginPath();
@@ -82,11 +100,8 @@ export function createFrequencyVisualizer({
     ctx.fillStyle = "black";
     ctx.textAlign = "center";
 
-    // Calculate pixels per Hz for scaling
-    const pixelsPerHz = WIDTH / (maxFreq - minFreq);
-
-    // Draw major ticks every 100 Hz
-    for (let freq = 0; freq <= maxFreq; freq += 100) {
+    // Draw major ticks every 2 Hz
+    for (let freq = minFreq; freq <= maxFreq; freq += 2) {
       const x = (freq - minFreq) * pixelsPerHz;
 
       // Draw major tick
@@ -95,23 +110,26 @@ export function createFrequencyVisualizer({
       ctx.lineTo(x, rulerY + 15);
       ctx.stroke();
 
-      // Add label
-      ctx.fillText(freq.toString(), x, rulerY + 30);
+      // Add frequency label
+      ctx.fillText(freq.toFixed(0), x, rulerY + 30);
     }
 
-    // Draw minor ticks every 20 Hz
-    for (let freq = 0; freq <= maxFreq; freq += 20) {
+    // Draw note labels at their frequencies
+    Object.entries(NOTE_FREQUENCIES).forEach(([note, freq]) => {
       const x = (freq - minFreq) * pixelsPerHz;
 
-      ctx.beginPath();
-      ctx.moveTo(x, rulerY);
-      ctx.lineTo(x, rulerY + 8);
-      ctx.stroke();
-    }
+      // Text settings
+      ctx.font = "12px Arial";
+      ctx.textAlign = "center";
+
+      // Draw note name above the ruler
+      ctx.fillStyle = "blue";
+      ctx.fillText(note, x, rulerY - 20); // Positioned above the ruler
+    });
 
     // Draw current frequency marker if available
-    if (frequency) {
-      const markerX = (frequency - minFreq) * pixelsPerHz;
+    if (currentFrequency) {
+      const markerX = (currentFrequency - minFreq) * pixelsPerHz;
 
       // Draw triangle pointer
       ctx.beginPath();
@@ -125,7 +143,7 @@ export function createFrequencyVisualizer({
       // Draw frequency text
       ctx.font = "14px Arial";
       ctx.fillStyle = "red";
-      ctx.fillText(`${Math.round(frequency)} Hz`, markerX, rulerY - 25);
+      ctx.fillText(`${Math.round(currentFrequency)} Hz`, markerX, rulerY - 45); // Moved higher to avoid overlap
     }
   };
 
