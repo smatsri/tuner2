@@ -41,13 +41,13 @@ export function createFrequencyVisualizer({
     let barHeight;
     let x = 0;
 
+    // Pre-calculate the gradient
+    const gradient = ctx.createLinearGradient(0, 0, 0, HEIGHT);
+    gradient.addColorStop(0, gradientColors.top);
+    gradient.addColorStop(1, gradientColors.bottom);
+
     for (let i = 0; i < data.length; i++) {
       barHeight = data[i] * barHeightMultiplier;
-
-      // Create gradient
-      const gradient = ctx.createLinearGradient(0, 0, 0, HEIGHT);
-      gradient.addColorStop(0, gradientColors.top);
-      gradient.addColorStop(1, gradientColors.bottom);
 
       ctx.fillStyle = gradient;
       ctx.fillRect(x, HEIGHT - barHeight, barWidth, barHeight);
