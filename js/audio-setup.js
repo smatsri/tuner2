@@ -11,7 +11,7 @@ export function monitorFrequencyData(analyser, audioContext) {
 
     const note = detectNote(analyser, audioContext);
     if (note && note.note) {
-      console.log(note?.note);
+      console.log(note?.note, note?.closeness);
     }
   };
 }

@@ -35,8 +35,6 @@ export const DEFAULT_DETECT_CONFIG = {
   maxPeaks: 10, // Maximum number of peaks to analyze
   amplitudeThreshold: 0.016, // Minimum amplitude to consider for wave detection
   interpolationFactor: 10, // Interpolation factor for wave analysis (divided by globk)
-  tuning: "standard", // Tuning to use for note analysis
-
   // Maximum allowed difference between detected and true frequency (as percentage)
   noteMatchThreshold: 0.15, // 15% tolerance for note matching
 };

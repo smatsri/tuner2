@@ -4,41 +4,26 @@ import {
   DEFAULT_DETECT_CONFIG,
 } from "./config.js";
 
-const tunings = {
-  standard: {
-    E2: 82.41, // Low E string
-    A2: 110.0, // A string
-    D3: 146.83, // D string
-    G3: 196.0, // G string
-    B3: 246.94, // B string
-    E4: 329.63, // High E string
-  },
-  dropD: {
-    D2: 73.42, // Low D string (instead of E2)
-    A2: 110.0, // A string
-    D3: 146.83, // D string
-    G3: 196.0, // G string
-    B3: 246.94, // B string
-    E4: 329.63, // High E string
-  },
-  // Add more tunings as needed
-  halfStepDown: {
-    Eb2: 77.78, // Low Eb string
-    Ab2: 103.83, // Ab string
-    Db3: 138.59, // Db string
-    Gb3: 185.0, // Gb string
-    Bb3: 233.08, // Bb string
-    Eb4: 311.13, // High Eb string
-  },
-  // Example: Open G tuning
-  openG: {
-    D2: 73.42, // Low D string
-    G2: 98.0, // G string
-    D3: 146.83, // D string
-    G3: 196.0, // G string
-    B3: 246.94, // B string
-    D4: 293.66, // High D string
-  },
+const NOTE_FREQUENCIES = {
+  D2: 73.42,
+  E2: 82.41,
+  A2: 110.0,
+  D3: 146.83,
+  G3: 196.0,
+  B3: 246.94,
+  E4: 329.63,
+  Eb2: 77.78,
+  Ab2: 103.83,
+  Db3: 138.59,
+  Gb3: 185.0,
+  Bb3: 233.08,
+  Eb4: 311.13,
+  D2: 73.42,
+  G2: 98.0,
+  D3: 146.83,
+  G3: 196.0,
+  B3: 246.94,
+  D4: 293.66,
 };
 
 export function detectNote(
@@ -65,15 +50,12 @@ export function detectNote(
     );
 
   if (frequency > 0) {
-    const noteName = getNoteName(
-      frequency,
-      config.tuning,
-      config.noteMatchThreshold
-    );
+    const note = getNote(frequency, config.noteMatchThreshold);
 
     return {
       frequency: Math.round(frequency),
-      note: noteName,
+      note: note.note,
+      closeness: note.closeness,
     };
   }
 
@@ -185,13 +167,10 @@ function findWaveLength(
     : minPeriodResult / interpolationFactor;
 }
 
-const getNoteName = (frequency, tuningName, matchThreshold) => {
+const getNote = (frequency, matchThreshold) => {
   let closestNote = null;
   let closestDiff = Infinity;
-  const noteFrequencies = tunings[tuningName];
-  if (!noteFrequencies) {
-    return null;
-  }
+  const noteFrequencies = NOTE_FREQUENCIES;
 
   for (const [note, freq] of Object.entries(noteFrequencies)) {
     const diff = Math.abs(frequency - freq);
@@ -203,7 +182,10 @@ const getNoteName = (frequency, tuningName, matchThreshold) => {
 
   const percentDiff = closestDiff / noteFrequencies[closestNote];
   if (percentDiff <= matchThreshold) {
-    return closestNote;
+    return {
+      note: closestNote,
+      closeness: 1 - percentDiff, // Closeness as a percentage
+    };
   }
   return null;
 };
