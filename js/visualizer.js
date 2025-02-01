@@ -4,12 +4,31 @@ export function createFrequencyVisualizer() {
   const ctx = canvas.getContext("2d");
   const WIDTH = canvas.width;
   const HEIGHT = canvas.height;
+  const gridColor = "rgba(0, 0, 0, 0.2)";
+  const gridWidth = 0.5;
+  const gridSpacing = 20;
+  const drawGrid = () => {
+    // Draw vertical grid lines
+    ctx.beginPath();
+    ctx.strokeStyle = gridColor;
+    ctx.lineWidth = gridWidth;
 
-  const draw = (data) => {
-    // Clear the previous frame
-    ctx.clearRect(0, 0, WIDTH, HEIGHT);
+    // Vertical lines
+    for (let x = 0; x <= WIDTH; x += gridSpacing) {
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, HEIGHT);
+    }
 
-    // Draw bars
+    // Horizontal lines
+    for (let y = 0; y <= HEIGHT; y += gridSpacing) {
+      ctx.moveTo(0, y);
+      ctx.lineTo(WIDTH, y);
+    }
+
+    ctx.stroke();
+  };
+
+  const drawBars = (data) => {
     const barWidth = (WIDTH / data.length) * 2.5;
     let barHeight;
     let x = 0;
@@ -27,6 +46,14 @@ export function createFrequencyVisualizer() {
 
       x += barWidth + 1;
     }
+  };
+
+  const draw = (data) => {
+    // Clear the previous frame
+    ctx.clearRect(0, 0, WIDTH, HEIGHT);
+
+    drawGrid();
+    drawBars(data);
   };
 
   return {
