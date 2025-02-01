@@ -35,16 +35,7 @@ export const DEFAULT_DETECT_CONFIG = {
   maxPeaks: 10, // Maximum number of peaks to analyze
   amplitudeThreshold: 0.016, // Minimum amplitude to consider for wave detection
   interpolationFactor: 10, // Interpolation factor for wave analysis (divided by globk)
-
-  // Musical note frequency mappings (in Hz)
-  noteFrequencies: {
-    E2: 82.41, // Low E string
-    A2: 110.0, // A string
-    D3: 146.83, // D string
-    G3: 196.0, // G string
-    B3: 246.94, // B string
-    E4: 329.63, // High E string
-  },
+  tuning: "standard", // Tuning to use for note analysis
 
   // Maximum allowed difference between detected and true frequency (as percentage)
   noteMatchThreshold: 0.15, // 15% tolerance for note matching
