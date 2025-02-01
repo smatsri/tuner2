@@ -46,74 +46,106 @@ function monitorFrequencyData(analyser, audioContext) {
     const data = frequencyData.current();
     visualizer.draw(data);
     const note = frequencyData.detectNote();
-    //console.log(note?.note);
+    if (note && note.note) {
+      console.log(note?.note);
+    }
   };
 }
 
-function findWaveLength(e, r, t, o, n, a, i) {
-  let s = [];
-  for (let m = 0; m < e.length - 1; m++) {
-    s.push(e[m]);
-    for (let d = 1; d < i; d++) {
-      s.push(e[m] + ((e[m + 1] - e[m]) * d) / i);
+function findWaveLength(
+  signalArray,
+  minPeriod,
+  maxPeriod,
+  peakThreshold,
+  maxPeaks,
+  amplitudeThreshold,
+  interpolationFactor
+) {
+  let interpolatedSignal = [];
+  for (let i = 0; i < signalArray.length - 1; i++) {
+    interpolatedSignal.push(signalArray[i]);
+    for (let j = 1; j < interpolationFactor; j++) {
+      interpolatedSignal.push(
+        signalArray[i] +
+          ((signalArray[i + 1] - signalArray[i]) * j) / interpolationFactor
+      );
     }
   }
-  s.push(e[e.length - 1]);
+  interpolatedSignal.push(signalArray[signalArray.length - 1]);
 
-  r *= i;
-  t *= i;
+  minPeriod *= interpolationFactor;
+  maxPeriod *= interpolationFactor;
 
-  let h = 0,
-    w = 0,
-    A = 0;
-  for (let d = 0; d < t; d++) {
-    if (Math.abs(s[d]) > h) {
-      w = d;
-      h = Math.abs(s[d]);
+  let maxAmplitude = 0,
+    peakIndex = 0,
+    totalAmplitude = 0;
+  for (let j = 0; j < maxPeriod; j++) {
+    if (Math.abs(interpolatedSignal[j]) > maxAmplitude) {
+      peakIndex = j;
+      maxAmplitude = Math.abs(interpolatedSignal[j]);
     }
-    A += Math.abs(s[d]);
+    totalAmplitude += Math.abs(interpolatedSignal[j]);
   }
 
-  if (a > A / t || w === 0 || w === t) return -1;
+  if (
+    amplitudeThreshold > totalAmplitude / maxPeriod ||
+    peakIndex === 0 ||
+    peakIndex === maxPeriod
+  )
+    return -1;
 
-  let v = 0,
-    p = 0,
-    y = Infinity,
-    T = 0;
-  for (let d = r; d <= t; d++) {
-    let F = 0,
-      b = 0,
-      C = 0,
-      D = 0;
-    for (let N = w; N < s.length; N += d) {
-      F += s[N];
-      if (b !== 0 && N < s.length - 5 * i) {
-        let k = s[N] / s[w];
-        if (k > 0) {
-          k = Math.min(k, 1);
-          let u = s[N],
-            l = s[N - 5 * i],
-            c = s[N + 5 * i];
-          if (s[w] >= 0 ? u > c && u > l : c > u && l > u) {
-            C += (k ** 4 * s[w] * o * (t - d)) / t;
-            D++;
+  let bestFrequency = 0,
+    bestPeriod = 0,
+    minFrequency = Infinity,
+    minPeriodResult = 0;
+  for (let j = minPeriod; j <= maxPeriod; j++) {
+    let sum = 0,
+      count = 0,
+      weightedSum = 0,
+      peakCount = 0;
+    for (let k = peakIndex; k < interpolatedSignal.length; k += j) {
+      sum += interpolatedSignal[k];
+      if (
+        count !== 0 &&
+        k < interpolatedSignal.length - 5 * interpolationFactor
+      ) {
+        let ratio = interpolatedSignal[k] / interpolatedSignal[peakIndex];
+        if (ratio > 0) {
+          ratio = Math.min(ratio, 1);
+          let current = interpolatedSignal[k],
+            prev = interpolatedSignal[k - 5 * interpolationFactor],
+            next = interpolatedSignal[k + 5 * interpolationFactor];
+          if (
+            interpolatedSignal[peakIndex] >= 0
+              ? current > next && current > prev
+              : next > current && prev > current
+          ) {
+            weightedSum +=
+              (ratio ** 4 *
+                interpolatedSignal[peakIndex] *
+                peakThreshold *
+                (maxPeriod - j)) /
+              maxPeriod;
+            peakCount++;
           }
         }
       }
-      b++;
-      if (b >= n) break;
+      count++;
+      if (count >= maxPeaks) break;
     }
-    F += (C * D) / b;
-    F /= b;
-    if (F > v) {
-      v = F;
-      p = d;
-    } else if (F < y) {
-      y = F;
-      T = d;
+    sum += (weightedSum * peakCount) / count;
+    sum /= count;
+    if (sum > bestFrequency) {
+      bestFrequency = sum;
+      bestPeriod = j;
+    } else if (sum < minFrequency) {
+      minFrequency = sum;
+      minPeriodResult = j;
     }
   }
-  return s[w] >= 0 ? p / i : T / i;
+  return interpolatedSignal[peakIndex] >= 0
+    ? bestPeriod / interpolationFactor
+    : minPeriodResult / interpolationFactor;
 }
 
 /**
@@ -159,31 +191,29 @@ function createFrequencyData(analyser, audioContext, scale = 0.5) {
     },
 
     detectNote: () => {
-      analyser.getByteFrequencyData(frequencyData);
-
+      const bitCounter = audioContext.sampleRate;
       // Convert frequency data to time domain data for findWaveLength
       const timeDomainData = new Float32Array(analyser.fftSize);
       analyser.getFloatTimeDomainData(timeDomainData);
 
-      const frequency = findWaveLength(
-        timeDomainData,
-        24, // Adjust these parameters as needed
-        1200,
-        10,
-        10,
-        0.016,
-        Math.ceil(10 / 1) // Assuming globk is 1 for simplicity
-      );
+      const frequency =
+        bitCounter /
+        findWaveLength(
+          timeDomainData,
+          24, // Adjust these parameters as needed
+          1200,
+          10,
+          10,
+          0.016,
+          Math.ceil(10 / 1) // Assuming globk is 1 for simplicity
+        );
 
       if (frequency > 0) {
         const noteName = getNoteName(frequency);
 
-        console.log(`Detected frequency: ${frequency.toFixed(2)}Hz`);
-
         return {
           frequency: Math.round(frequency),
           note: noteName,
-          amplitude: Math.max(...frequencyData),
         };
       }
 
@@ -202,9 +232,9 @@ async function initAudioVisualizer(audioUrl) {
   const analyser = audioContext.createAnalyser();
   // Configure analyser for better visualization
   analyser.fftSize = 4096; // Increase FFT size for better frequency resolution
-  analyser.smoothingTimeConstant = 0.8; // Smooths visualization
-  analyser.minDecibels = -90;
-  analyser.maxDecibels = -10;
+  analyser.smoothingTimeConstant = 0; // Smooths visualization
+  // analyser.minDecibels = -90;
+  // analyser.maxDecibels = -10;
 
   const response = await fetch(audioUrl);
   const data = await response.arrayBuffer();
