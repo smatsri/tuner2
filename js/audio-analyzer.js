@@ -4,7 +4,7 @@ import {
   DEFAULT_DETECT_CONFIG,
 } from "./config.js";
 
-const NOTE_FREQUENCIES = {
+export const NOTE_FREQUENCIES = {
   D2: 73.42,
   E2: 82.41,
   A2: 110.0,
@@ -49,8 +49,9 @@ export function detectNote(
     const note = getNote(frequency, config.noteMatchThreshold);
 
     return {
-      frequency: Math.round(frequency),
+      frequency,
       note: note?.note,
+      neighborNote: note?.neighborNote,
       closeness: note?.closeness || 0,
     };
   }
@@ -58,6 +59,7 @@ export function detectNote(
   return {
     frequency: 0,
     note: null,
+    neighborNote: null,
     closeness: 0,
   };
 }
@@ -169,23 +171,30 @@ function findWaveLength(
 
 const getNote = (frequency, matchThreshold) => {
   let closestNote = null;
+  let secondClosestNote = null;
   let closestDiff = Infinity;
+  let secondClosestDiff = Infinity;
   const noteFrequencies = NOTE_FREQUENCIES;
 
   for (const [note, freq] of Object.entries(noteFrequencies)) {
     const diff = Math.abs(frequency - freq);
     if (diff < closestDiff) {
+      secondClosestDiff = closestDiff;
+      secondClosestNote = closestNote;
       closestDiff = diff;
       closestNote = note;
+    } else if (diff < secondClosestDiff) {
+      secondClosestDiff = diff;
+      secondClosestNote = note;
     }
   }
 
   const percentDiff = closestDiff / noteFrequencies[closestNote];
   if (percentDiff <= matchThreshold) {
     const closeness = (1 - percentDiff) * 100;
-    // Use negative closeness if the frequency is lower
     return {
       note: closestNote,
+      neighborNote: secondClosestNote,
       closeness:
         frequency < noteFrequencies[closestNote] ? -closeness : closeness,
     };
