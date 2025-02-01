@@ -50,6 +50,72 @@ function monitorFrequencyData(analyser, audioContext) {
   };
 }
 
+function findWaveLength(e, r, t, o, n, a, i) {
+  let s = [];
+  for (let m = 0; m < e.length - 1; m++) {
+    s.push(e[m]);
+    for (let d = 1; d < i; d++) {
+      s.push(e[m] + ((e[m + 1] - e[m]) * d) / i);
+    }
+  }
+  s.push(e[e.length - 1]);
+
+  r *= i;
+  t *= i;
+
+  let h = 0,
+    w = 0,
+    A = 0;
+  for (let d = 0; d < t; d++) {
+    if (Math.abs(s[d]) > h) {
+      w = d;
+      h = Math.abs(s[d]);
+    }
+    A += Math.abs(s[d]);
+  }
+
+  if (a > A / t || w === 0 || w === t) return -1;
+
+  let v = 0,
+    p = 0,
+    y = Infinity,
+    T = 0;
+  for (let d = r; d <= t; d++) {
+    let F = 0,
+      b = 0,
+      C = 0,
+      D = 0;
+    for (let N = w; N < s.length; N += d) {
+      F += s[N];
+      if (b !== 0 && N < s.length - 5 * i) {
+        let k = s[N] / s[w];
+        if (k > 0) {
+          k = Math.min(k, 1);
+          let u = s[N],
+            l = s[N - 5 * i],
+            c = s[N + 5 * i];
+          if (s[w] >= 0 ? u > c && u > l : c > u && l > u) {
+            C += (k ** 4 * s[w] * o * (t - d)) / t;
+            D++;
+          }
+        }
+      }
+      b++;
+      if (b >= n) break;
+    }
+    F += (C * D) / b;
+    F /= b;
+    if (F > v) {
+      v = F;
+      p = d;
+    } else if (F < y) {
+      y = F;
+      T = d;
+    }
+  }
+  return s[w] >= 0 ? p / i : T / i;
+}
+
 /**
  * Creates a wrapper around the frequency data array
  * @param {AnalyserNode} analyser - The Web Audio API analyser node to get data from
@@ -57,10 +123,6 @@ function monitorFrequencyData(analyser, audioContext) {
  */
 function createFrequencyData(analyser, audioContext, scale = 0.5) {
   const frequencyData = new Uint8Array(analyser.frequencyBinCount);
-
-  const getBinFrequency = (binIndex) => {
-    return binIndex * (audioContext.sampleRate / analyser.fftSize);
-  };
 
   const getNoteName = (frequency) => {
     const noteFrequencies = {
@@ -99,44 +161,29 @@ function createFrequencyData(analyser, audioContext, scale = 0.5) {
     detectNote: () => {
       analyser.getByteFrequencyData(frequencyData);
 
-      let maxAmplitude = 0;
-      let peakIndex = -1;
+      // Convert frequency data to time domain data for findWaveLength
+      const timeDomainData = new Float32Array(analyser.fftSize);
+      analyser.getFloatTimeDomainData(timeDomainData);
 
-      // Adjust frequency range to better target E2's fundamental
-      const startBin = Math.floor(70 / getBinFrequency(1)); // Lower bound
-      const endBin = Math.floor(350 / getBinFrequency(1)); // Upper bound to include all target notes
+      const frequency = findWaveLength(
+        timeDomainData,
+        24, // Adjust these parameters as needed
+        1200,
+        10,
+        10,
+        0.016,
+        Math.ceil(10 / 1) // Assuming globk is 1 for simplicity
+      );
 
-      // First pass: find the absolute maximum amplitude
-      let absoluteMax = 0;
-      for (let i = startBin; i < endBin; i++) {
-        if (frequencyData[i] > absoluteMax) {
-          absoluteMax = frequencyData[i];
-        }
-      }
+      if (frequency > 0) {
+        const noteName = getNoteName(frequency);
 
-      // Second pass: find significant peak that's at least 50% of max amplitude
-      const threshold = absoluteMax * 0.5;
-      for (let i = startBin; i < endBin; i++) {
-        if (frequencyData[i] > threshold && frequencyData[i] > maxAmplitude) {
-          maxAmplitude = frequencyData[i];
-          peakIndex = i;
-        }
-      }
-
-      if (maxAmplitude > 30) {
-        const fundamentalFreq = getBinFrequency(peakIndex);
-        const noteName = getNoteName(fundamentalFreq);
-
-        console.log(
-          `Detected frequency: ${fundamentalFreq.toFixed(
-            2
-          )}Hz, note: ${noteName}`
-        );
+        console.log(`Detected frequency: ${frequency.toFixed(2)}Hz`);
 
         return {
-          frequency: Math.round(fundamentalFreq),
+          frequency: Math.round(frequency),
           note: noteName,
-          amplitude: maxAmplitude,
+          amplitude: Math.max(...frequencyData),
         };
       }
 
