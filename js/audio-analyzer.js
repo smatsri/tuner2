@@ -50,12 +50,16 @@ export function detectNote(
 
     return {
       frequency: Math.round(frequency),
-      note: note.note,
-      closeness: note.closeness,
+      note: note?.note,
+      closeness: note?.closeness || 0,
     };
   }
 
-  return null;
+  return {
+    frequency: 0,
+    note: null,
+    closeness: 0,
+  };
 }
 
 export function getFrequencyData(
@@ -178,7 +182,7 @@ const getNote = (frequency, matchThreshold) => {
 
   const percentDiff = closestDiff / noteFrequencies[closestNote];
   if (percentDiff <= matchThreshold) {
-    const closeness = 1 - percentDiff;
+    const closeness = (1 - percentDiff) * 100;
     // Use negative closeness if the frequency is lower
     return {
       note: closestNote,

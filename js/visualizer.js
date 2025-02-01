@@ -15,6 +15,8 @@ export function createFrequencyVisualizer({
   const WIDTH = canvas.width;
   const HEIGHT = canvas.height;
 
+  let currentNote = null;
+
   const drawGrid = () => {
     // Draw vertical grid lines
     ctx.beginPath();
@@ -56,12 +58,25 @@ export function createFrequencyVisualizer({
     }
   };
 
-  const draw = (data) => {
+  const drawNote = ({ frequency, note, closeness }) => {
+    ctx.font = "16px Arial";
+    ctx.fillStyle = "black";
+    ctx.fillText(`Note: ${note}`, 10, 20);
+    ctx.fillText(`Closeness: ${closeness.toFixed(6)}`, 10, 40);
+  };
+
+  const draw = (data, note = null) => {
     // Clear the previous frame
     ctx.clearRect(0, 0, WIDTH, HEIGHT);
 
-    drawGrid();
-    drawBars(data);
+    //drawGrid();
+    //drawBars(data);
+    if (note && note.frequency > 0 && note.note && note.closeness > 0) {
+      currentNote = note;
+    }
+    if (currentNote) {
+      drawNote(currentNote);
+    }
   };
 
   return {

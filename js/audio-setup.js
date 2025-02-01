@@ -7,12 +7,13 @@ export function monitorFrequencyData(analyser, audioContext) {
   const visualizer = createFrequencyVisualizer();
   return () => {
     const data = getFrequencyData(analyser, frequencyData);
-    visualizer.draw(data);
 
-    const note = detectNote(analyser, audioContext);
-    if (note && note.note) {
-      console.log(note?.note, note?.closeness);
+    const noteData = detectNote(analyser, audioContext);
+    if (noteData && noteData.note) {
+      console.log(noteData?.note, noteData?.closeness);
     }
+
+    visualizer.draw(data, noteData);
   };
 }
 
