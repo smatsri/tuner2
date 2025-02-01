@@ -182,9 +182,12 @@ const getNote = (frequency, matchThreshold) => {
 
   const percentDiff = closestDiff / noteFrequencies[closestNote];
   if (percentDiff <= matchThreshold) {
+    const closeness = 1 - percentDiff;
+    // Use negative closeness if the frequency is lower
     return {
       note: closestNote,
-      closeness: 1 - percentDiff, // Closeness as a percentage
+      closeness:
+        frequency < noteFrequencies[closestNote] ? -closeness : closeness,
     };
   }
   return null;
