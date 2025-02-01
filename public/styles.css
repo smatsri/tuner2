@@ -45,7 +45,7 @@ section {
   margin: 2rem 0;
 }
 
-#startAudio {
+.notes-group {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;

@@ -8,18 +8,30 @@
   </head>
   <body>
     <h1>Guitar Tuner</h1>
+    <canvas id="visualizer" width="800" height="200"></canvas>
+
     <section class="container">
       <h2>Base notes</h2>
-      <div id="startAudio">
-        <button type="button">E2</button>
-        <button type="button">A2</button>
-        <button type="button">D3</button>
-        <button type="button">G3</button>
-        <button type="button">B3</button>
-        <button type="button">E4</button>
+      <div class="notes-group" data-notes-group="base">
+        <button type="button" data-file="E2.mp3">E2</button>
+        <button type="button" data-file="A2.mp3">A2</button>
+        <button type="button" data-file="D3.mp3">D3</button>
+        <button type="button" data-file="G3.mp3">G3</button>
+        <button type="button" data-file="B3.mp3">B3</button>
+        <button type="button" data-file="E4.mp3">E4</button>
       </div>
     </section>
-    <canvas id="visualizer" width="800" height="200"></canvas>
+    <section class="container">
+      <h2>My notes</h2>
+      <div class="notes-group" data-notes-group="my">
+        <button type="button" data-file="E2.ogg">E2</button>
+        <button type="button" data-file="A2.ogg">A2</button>
+        <button type="button" data-file="D3.ogg">D3</button>
+        <button type="button" data-file="G3.ogg">G3</button>
+        <button type="button" data-file="B3.ogg">B3</button>
+        <button type="button" data-file="E4.ogg">E4</button>
+      </div>
+    </section>
     <script src="public/main.js"></script>
   </body>
 </html>

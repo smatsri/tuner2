@@ -118,13 +118,14 @@ function getFrames(onFrame) {
  * @returns {Promise<void>}
  */
 async function handleClick(e) {
-  const note = e.target.innerText;
+  const groupName = this.getAttribute("data-notes-group");
+  const noteFile = e.target.getAttribute("data-file");
   const button = e.target;
   button.disabled = true; // Prevent multiple clicks
 
   try {
     const { source, analyser, context } = await initAudioVisualizer(
-      `public/media/notes/base/${note}.mp3`
+      `public/media/notes/${groupName}/${noteFile}`
     );
 
     source.start();
@@ -165,5 +166,7 @@ function findPeakFrequency(frequencyData, { threshold = 0 } = {}) {
 
 document.addEventListener("DOMContentLoaded", () => {
   console.log("Page loaded successfully! 🚀");
-  document.querySelector("#startAudio").addEventListener("click", handleClick);
+  document.querySelectorAll(".notes-group").forEach((group) => {
+    group.addEventListener("click", handleClick);
+  });
 });
