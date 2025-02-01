@@ -1,6 +1,15 @@
-import { DEFAULT_GLOBK, DEFAULT_SCALE } from "./config.js";
+import {
+  DEFAULT_GLOBK,
+  DEFAULT_SCALE,
+  DEFAULT_DETECT_CONFIG,
+} from "./config.js";
 
-export function detectNote(analyser, audioContext, globk = DEFAULT_GLOBK) {
+export function detectNote(
+  analyser,
+  audioContext,
+  globk = DEFAULT_GLOBK,
+  config = DEFAULT_DETECT_CONFIG
+) {
   const bitCounter = audioContext.sampleRate;
   // Convert frequency data to time domain data for findWaveLength
   const timeDomainData = new Float32Array(analyser.fftSize);
@@ -10,16 +19,20 @@ export function detectNote(analyser, audioContext, globk = DEFAULT_GLOBK) {
     bitCounter /
     findWaveLength(
       timeDomainData,
-      24, // Adjust these parameters as needed
-      1200,
-      10,
-      10,
-      0.016,
-      Math.ceil(10 / globk) // Assuming globk is 1 for simplicity
+      config.minPeriod,
+      config.maxPeriod,
+      config.peakThreshold,
+      config.maxPeaks,
+      config.amplitudeThreshold,
+      Math.ceil(config.interpolationFactor / globk)
     );
 
   if (frequency > 0) {
-    const noteName = getNoteName(frequency);
+    const noteName = getNoteName(
+      frequency,
+      config.noteFrequencies,
+      config.noteMatchThreshold
+    );
 
     return {
       frequency: Math.round(frequency),
@@ -135,16 +148,7 @@ function findWaveLength(
     : minPeriodResult / interpolationFactor;
 }
 
-const getNoteName = (frequency) => {
-  const noteFrequencies = {
-    E2: 82.41,
-    A2: 110.0,
-    D3: 146.83,
-    G3: 196.0,
-    B3: 246.94,
-    E4: 329.63,
-  };
-
+const getNoteName = (frequency, noteFrequencies, matchThreshold) => {
   let closestNote = null;
   let closestDiff = Infinity;
 
@@ -157,7 +161,7 @@ const getNoteName = (frequency) => {
   }
 
   const percentDiff = closestDiff / noteFrequencies[closestNote];
-  if (percentDiff <= 0.15) {
+  if (percentDiff <= matchThreshold) {
     return closestNote;
   }
   return null;
