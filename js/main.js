@@ -10,7 +10,7 @@ async function handleClick(e) {
   console.log("Playing " + e.target.innerText);
   try {
     const { source, analyser, context } = await initAudioVisualizer(
-      `public/media/notes/${groupName}/${noteFile}`
+      `media/notes/${groupName}/${noteFile}`
     );
 
     source.start();
