@@ -71,6 +71,17 @@ button:active {
   transform: scale(0.98);
 }
 
+/* Add disabled button styles */
+button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+button:disabled:hover {
+  background-color: #cccccc;
+}
+
 @media (max-width: 480px) {
   .container {
     padding: 20px;
