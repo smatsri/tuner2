@@ -1,12 +1,20 @@
-export function createFrequencyVisualizer() {
+import { DEFAULT_VISUALIZER_CONFIG } from "./config.js";
+
+export function createFrequencyVisualizer({
+  gridColor,
+  gridWidth,
+  gridSpacing,
+  barWidthMultiplier,
+  barHeightMultiplier,
+  barSpacing,
+  gradientColors,
+} = DEFAULT_VISUALIZER_CONFIG) {
   const canvas = document.getElementById("visualizer");
 
   const ctx = canvas.getContext("2d");
   const WIDTH = canvas.width;
   const HEIGHT = canvas.height;
-  const gridColor = "rgba(0, 0, 0, 0.2)";
-  const gridWidth = 0.5;
-  const gridSpacing = 20;
+
   const drawGrid = () => {
     // Draw vertical grid lines
     ctx.beginPath();
@@ -29,22 +37,22 @@ export function createFrequencyVisualizer() {
   };
 
   const drawBars = (data) => {
-    const barWidth = (WIDTH / data.length) * 2.5;
+    const barWidth = (WIDTH / data.length) * barWidthMultiplier;
     let barHeight;
     let x = 0;
 
     for (let i = 0; i < data.length; i++) {
-      barHeight = data[i] * 2;
+      barHeight = data[i] * barHeightMultiplier;
 
       // Create gradient
       const gradient = ctx.createLinearGradient(0, 0, 0, HEIGHT);
-      gradient.addColorStop(0, "#00ff00");
-      gradient.addColorStop(1, "#003300");
+      gradient.addColorStop(0, gradientColors.top);
+      gradient.addColorStop(1, gradientColors.bottom);
 
       ctx.fillStyle = gradient;
       ctx.fillRect(x, HEIGHT - barHeight, barWidth, barHeight);
 
-      x += barWidth + 1;
+      x += barWidth + barSpacing;
     }
   };
 
