@@ -1,4 +1,5 @@
 import { detectNote, getFrequencyData } from "./audio-analyzer.js";
+import { DEFAULT_GLOBK } from "./config.js";
 import { createFrequencyVisualizer } from "./visualizer.js";
 
 export function monitorFrequencyData(analyser, audioContext) {
@@ -15,7 +16,7 @@ export function monitorFrequencyData(analyser, audioContext) {
   };
 }
 
-export async function initAudioVisualizer(audioUrl, globk = 1) {
+export async function initAudioVisualizer(audioUrl, globk = DEFAULT_GLOBK) {
   const audioContext = new AudioContext();
   const analyser = audioContext.createAnalyser();
   // Configure analyser for better visualization

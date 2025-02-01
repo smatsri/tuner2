@@ -1,4 +1,6 @@
-export function detectNote(analyser, audioContext, globk = 1) {
+import { DEFAULT_GLOBK, DEFAULT_SCALE } from "./config.js";
+
+export function detectNote(analyser, audioContext, globk = DEFAULT_GLOBK) {
   const bitCounter = audioContext.sampleRate;
   // Convert frequency data to time domain data for findWaveLength
   const timeDomainData = new Float32Array(analyser.fftSize);
@@ -28,7 +30,11 @@ export function detectNote(analyser, audioContext, globk = 1) {
   return null;
 }
 
-export function getFrequencyData(analyser, frequencyData, scale = 0.5) {
+export function getFrequencyData(
+  analyser,
+  frequencyData,
+  scale = DEFAULT_SCALE
+) {
   analyser.getByteFrequencyData(frequencyData);
   return Array.from(frequencyData).map((value) => value * scale);
 }
