@@ -1,49 +1,48 @@
 import { NOTE_FREQUENCIES } from "./audio-analyzer.js";
 import { DEFAULT_VISUALIZER_CONFIG } from "./config.js";
 
-export function createFrequencyVisualizer({
-  gridColor,
-  gridWidth,
-  gridSpacing,
-  barWidthMultiplier,
-  barHeightMultiplier,
-  barSpacing,
-  gradientColors,
-} = DEFAULT_VISUALIZER_CONFIG) {
-  const canvas = document.getElementById("visualizer");
-
-  const ctx = canvas.getContext("2d");
-  const WIDTH = canvas.width;
-  const HEIGHT = canvas.height;
-
-  const drawGrid = () => {
+const Grid =
+  ({
+    color = DEFAULT_VISUALIZER_CONFIG.gridColor,
+    width = DEFAULT_VISUALIZER_CONFIG.gridWidth,
+    spacing = DEFAULT_VISUALIZER_CONFIG.gridSpacing,
+  }) =>
+  (ctx, canvas) => {
     // Draw vertical grid lines
     ctx.beginPath();
-    ctx.strokeStyle = gridColor;
-    ctx.lineWidth = gridWidth;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
 
     // Vertical lines
-    for (let x = 0; x <= WIDTH; x += gridSpacing) {
+    for (let x = 0; x <= canvas.width; x += spacing) {
       ctx.moveTo(x, 0);
-      ctx.lineTo(x, HEIGHT);
+      ctx.lineTo(x, canvas.height);
     }
 
     // Horizontal lines
-    for (let y = 0; y <= HEIGHT; y += gridSpacing) {
+    for (let y = 0; y <= canvas.height; y += spacing) {
       ctx.moveTo(0, y);
-      ctx.lineTo(WIDTH, y);
+      ctx.lineTo(canvas.width, y);
     }
 
     ctx.stroke();
   };
 
-  const drawBars = (data) => {
-    const barWidth = (WIDTH / data.length) * barWidthMultiplier;
+const Bars =
+  ({
+    data,
+    barWidthMultiplier = 1,
+    barHeightMultiplier = 1,
+    barSpacing = DEFAULT_VISUALIZER_CONFIG.barSpacing,
+    gradientColors = DEFAULT_VISUALIZER_CONFIG.gradientColors,
+  }) =>
+  (ctx, canvas) => {
+    const barWidth = (canvas.width / data.length) * barWidthMultiplier;
     let barHeight;
     let x = 0;
 
     // Pre-calculate the gradient
-    const gradient = ctx.createLinearGradient(0, 0, 0, HEIGHT);
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
     gradient.addColorStop(0, gradientColors.top);
     gradient.addColorStop(1, gradientColors.bottom);
 
@@ -51,38 +50,34 @@ export function createFrequencyVisualizer({
       barHeight = data[i] * barHeightMultiplier;
 
       ctx.fillStyle = gradient;
-      ctx.fillRect(x, HEIGHT - barHeight, barWidth, barHeight);
+      ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
 
       x += barWidth + barSpacing;
     }
   };
 
-  const drawFrequency = (frequency) => {
-    ctx.font = "16px Arial";
-    ctx.fillStyle = "black";
-    ctx.fillText(`Frequency: ${frequency}`, 10, 20);
-  };
+// Linear interpolation function
+const lerp = (start, end, t) => start + (end - start) * t;
 
-  // Linear interpolation function
-  const lerp = (start, end, t) => start + (end - start) * t;
-
-  let currentFrequency = null;
-
-  const drawFrequencyRuler = (targetFrequency) => {
+const FrequencyRuler =
+  ({ targetFrequency }) =>
+  (ctx, canvas, state) => {
+    const HEIGHT = canvas.height;
+    const WIDTH = canvas.width;
     const rulerHeight = 50;
     const rulerY = HEIGHT - rulerHeight;
 
     // Initialize currentFrequency if it's null
-    if (currentFrequency === null) {
-      currentFrequency = targetFrequency;
+    if (state.currentFrequency === null) {
+      state.currentFrequency = targetFrequency;
     }
 
     // Smoothly transition to the target frequency
-    currentFrequency = lerp(currentFrequency, targetFrequency, 0.1);
+    state.currentFrequency = lerp(state.currentFrequency, targetFrequency, 0.1);
 
     // Calculate the frequency range centered around the current frequency
-    const minFreq = currentFrequency - 10;
-    const maxFreq = currentFrequency + 10;
+    const minFreq = state.currentFrequency - 10;
+    const maxFreq = state.currentFrequency + 10;
 
     // Calculate pixels per Hz for scaling
     const pixelsPerHz = WIDTH / (maxFreq - minFreq);
@@ -128,8 +123,8 @@ export function createFrequencyVisualizer({
     });
 
     // Draw current frequency marker if available
-    if (currentFrequency) {
-      const markerX = (currentFrequency - minFreq) * pixelsPerHz;
+    if (state.currentFrequency) {
+      const markerX = (state.currentFrequency - minFreq) * pixelsPerHz;
 
       // Draw triangle pointer
       ctx.beginPath();
@@ -143,24 +138,68 @@ export function createFrequencyVisualizer({
       // Draw frequency text
       ctx.font = "14px Arial";
       ctx.fillStyle = "red";
-      ctx.fillText(`${Math.round(currentFrequency)} Hz`, markerX, rulerY - 45); // Moved higher to avoid overlap
+      ctx.fillText(
+        `${Math.round(state.currentFrequency)} Hz`,
+        markerX,
+        rulerY - 45
+      ); // Moved higher to avoid overlap
     }
   };
 
+const Layout = () => (ctx, canvas) => {
+  ctx.beginPath();
+  ctx.strokeStyle = "black";
+  ctx.lineWidth = 2;
+  ctx.moveTo(0, 0);
+  ctx.lineTo(canvas.width, canvas.height);
+  ctx.stroke();
+};
+
+const render = (view, ctx, canvas, state = {}) => {
+  view.forEach(([component, children]) => {
+    component(ctx, canvas, state);
+
+    if (children) {
+      children.forEach((child) => {
+        if (Array.isArray(child)) {
+          render(child, ctx, canvas, state);
+        } else {
+          child(ctx, canvas, state);
+        }
+      });
+    }
+  });
+};
+
+const View = ({ targetFrequency, data }) => [
+  [
+    Layout,
+    [
+      Grid({}),
+      // Bars({
+      //   data,
+      // }),
+      FrequencyRuler({ targetFrequency }),
+    ],
+  ],
+];
+
+export function createFrequencyVisualizer() {
+  const canvas = document.getElementById("visualizer");
+  const ctx = canvas.getContext("2d");
+  const WIDTH = canvas.width;
+  const HEIGHT = canvas.height;
+
+  const state = { currentFrequency: null };
+
   const draw = (data, note = null) => {
-    // Clear the previous frame
     ctx.clearRect(0, 0, WIDTH, HEIGHT);
-
-    // Draw the grid first (background)
-    //drawGrid();
-
-    // Draw the frequency bars on top
-    //drawBars(data);
-
-    // Draw the frequency ruler at the bottom
-    drawFrequencyRuler(note?.frequency);
-
-    // Update current note if provided
+    render(
+      View({ targetFrequency: note?.frequency, data }),
+      ctx,
+      canvas,
+      state
+    );
   };
 
   return {
