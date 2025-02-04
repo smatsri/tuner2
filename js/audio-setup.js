@@ -1,6 +1,6 @@
 import { detectNote, getFrequencyData } from "./audio-analyzer.js";
 import { DEFAULT_GLOBK } from "./config.js";
-import { createFrequencyVisualizer } from "./visualizer.js";
+import { createFrequencyVisualizer } from "./visualizer/index.js";
 
 export function monitorFrequencyData(analyser, audioContext) {
   const frequencyData = new Uint8Array(analyser.frequencyBinCount);
